@@ -4,6 +4,11 @@
 
 using namespace std;
 
+struct trait {
+    vector< vector<double> > inputs;    // Inputs
+    vector< vector<double> > g_val;   // Good values
+};
+
 int main() {
     // INPUT EXAMPLE
     vector<double> input(2);

@@ -162,3 +162,45 @@ void Net::propagation(double n, vector<double> &input) {
         }
     }
 }
+
+void Net::interpretate(const vector< vector<double> > &correct_value,
+                       vector<double> &output_outputlayer,
+                       double error_admited, bool &b, int k) {
+
+    int l = 0;
+    b = true;
+    while (b and l < input.size()) {
+        if ((correct_value[k][l] - output_outputlayer[l]) >
+                error_admited) {b = false;}
+        ++l;
+    }
+
+}
+
+
+void Net::train(vector<double> &output_outputlayer,
+                const vector< vector<double> > &correct_value,
+                double n, double error_admited,
+                vector< vector<double> > &input) {
+
+    bool frenar = false;
+    int k = 0;  // I will use it as a index of a samples (training set + correct value)
+    while (not frenar) {
+        calculate_net(output_outputlayer);
+
+
+        // Aquí es la parte donde se interpreta
+        interpretate(correct_value, output_outputlayer, error_admited,
+                     frenar, k);
+
+        if (not frenar) {
+            error(correct_value[k], output_outputlayer);
+            propagation(n, input[k]);
+        }
+
+        if (k >= input.size()) k = 0;
+        else ++k;
+    }
+
+}
+

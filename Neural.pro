@@ -2,7 +2,7 @@ TEMPLATE = app
 CONFIG += console
 CONFIG -= app_bundle
 CONFIG -= qt
-QMAKE_CXXFLAGS += -Wsign-compare -D_GLIBCXX_DEBUG -std=c++11
+QMAKE_CXXFLAGS += -D_GLIBCXX_DEBUG -std=c++11
 QMAKE_CFLAGS_WARN_OFF += -Wsign-compare
 HEADERS += *.hh
 SOURCES += *.cc

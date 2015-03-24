@@ -39,8 +39,21 @@ public:
      *  \post All the weights are been recalculated */
     void propagation(double n, vector<double> &input);
 
+    /** \brief This networks not have exact values, so here you
+     *  put the minimum output for consider it correct.
+     *  \pre True.
+     *  \post Interpretate values will be updated */
+    void interpretate(const vector< vector<double> > &correct_value,
+                      vector<double> &output_outputlayer,
+                      double error_admited, bool &b, int k);
+
     /** \brief It trains ANN
-    void train();
+     *  \pre True.
+     *  \post Ann will be trained */
+    void train(vector<double> &output_outputlayer,
+               const vector< vector<double> > &correct_value,
+               double n, double error_admited,
+               vector< vector<double> > &input);
 
 };
 
