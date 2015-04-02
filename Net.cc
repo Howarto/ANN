@@ -11,9 +11,8 @@ double Net::fRand(double fMin, double fMax) {
 
 // Constructoras
 Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) {
-    input = inp;
-    input_layer = vector<Neuron>(input_size);
-    hidden_layer = vector<Neuron>(hidden_size);
+    input_layer = vector<Neuron>(input_size + 1);       // Sumo 1 para la bias
+    hidden_layer = vector<Neuron>(hidden_size + 1);     // Sumo 1 para la bias
     output_layer = vector<Neuron>(output_size);
 
     // Initialize random weights
@@ -21,12 +20,12 @@ Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) 
         input_layer[i].length_weight_vector(inp.size());
         for (int j = 0; j < inp.size(); ++j) {
             // TENGO QUE GENERAR AQUÍ UN NÚMERO ALEATORIO!!
-            input_layer[i].modify_i(j, fRand(-1.0,1.0));
+            input_layer[i].modify_i(j, fRand(-0.5,0.5));
         }
     }
 
 
-//    // ESTO ES PARA EL EXAMPLE!!!
+    // ESTO ES PARA EL EXAMPLE!!!
 //    input_layer[0].modify_i(0, 1);
 //    input_layer[0].modify_i(1, 0.15);
 
@@ -36,14 +35,14 @@ Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) 
 //    input_layer[2].modify_i(0, 0.8);
 //    input_layer[2].modify_i(1, 1.2);
 
-    for (int i = 0; i < hidden_size; ++i) {
-        hidden_layer[i].length_weight_vector(input_size);
-        for (int j = 0; j < input_size; ++j) {
-            hidden_layer[i].modify_i(j, fRand(-1.0,1.5));
+    for (int i = 0; i < hidden_layer.size(); ++i) {
+        hidden_layer[i].length_weight_vector(input_layer.size());
+        for (int j = 0; j < input_layer.size(); ++j) {
+            hidden_layer[i].modify_i(j, fRand(-0.6,0.9));
         }
     }
 
-//    // ESTO ES PARA EL EXAMPLE!!!
+    // ESTO ES PARA EL EXAMPLE!!!
 //    hidden_layer[0].modify_i(0, 0.2);
 //    hidden_layer[0].modify_i(1, 0.21);
 //    hidden_layer[0].modify_i(2, 0.62);
@@ -52,14 +51,14 @@ Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) 
 //    hidden_layer[1].modify_i(1, 0.55);
 //    hidden_layer[1].modify_i(2, 0.81);
 
-    for (int i = 0; i < output_size; ++i) {
-        output_layer[i].length_weight_vector(hidden_size);
-        for (int j = 0; j < hidden_size; ++j) {
-            output_layer[i].modify_i(j, fRand(-1.1,0.9));
+    for (int i = 0; i < output_layer.size(); ++i) {
+        output_layer[i].length_weight_vector(hidden_layer.size());
+        for (int j = 0; j < hidden_layer.size(); ++j) {
+            output_layer[i].modify_i(j, fRand(-1,0.789));
         }
     }
 
-//    // ESTO ES PARA EL EXAMPLE!!!
+    // ESTO ES PARA EL EXAMPLE!!!
 //    output_layer[0].modify_i(0, 0.09);
 //    output_layer[0].modify_i(1, 0.4);
 
@@ -68,23 +67,26 @@ Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) 
 // Modificadores
 
 
-void Net::calculate_net(vector<double> &output_outputlayer) {
+void Net::calculate_network_net(const vector<double> &input ,vector<double> &output_outputlayer) {
     // Operaciones input layer
     vector<double> output_inputlayer(input_layer.size());
-    for (int i = 0; i < input_layer.size(); ++i) {
+    for (int i = 0; i < int(input_layer.size()) - 1; ++i) {     // El -1 es por la bias
         input_layer[i].calculate_net(input);
         output_inputlayer[i] = input_layer[i].calculate_output();
     }
-
+    input_layer[int(input_layer.size()) - 1].set_net(1);
+    output_inputlayer[int(input_layer.size()) - 1] = 1;     // meto el valor de la bias
     // Cuando llegue hasta aquí en output_inputlayer estarán todas
     // las salidas del primer layer.
     /* Ahora lo redirigiré hacia el hidden layer */
 
     vector<double> output_hiddenlayer(hidden_layer.size());
-    for (int i = 0; i < hidden_layer.size(); ++i) {
+    for (int i = 0; i < int(hidden_layer.size()) - 1; ++i) {         // -1 por la bias
         hidden_layer[i].calculate_net(output_inputlayer);
         output_hiddenlayer[i] = hidden_layer[i].calculate_output();
     }
+    hidden_layer[int(hidden_layer.size()) - 1].set_net(1);
+    output_hiddenlayer[int(hidden_layer.size()) - 1] = 1;   // meto el valor por la bias
 
     // Hice lo mismo que antes pero con la capa hidden. Ahora redigiré
     // hacia la última capa lo que queda.
@@ -123,7 +125,7 @@ void Net::error(const vector<double> &correct_value, const vector<double> &outpu
     // Bucle para el input
     for (int i = 0; i < input_layer.size(); ++i) {
         aux = 0;
-        for (int l = 0; l < hidden_layer.size(); ++l) {
+        for (int l = 0; l < int(hidden_layer.size()) - 1; ++l) {     // -1 por la bias
             aux += hidden_layer[l].i_weight_vector(i) * hidden_layer[l].delta_value();
 
         }
@@ -131,9 +133,9 @@ void Net::error(const vector<double> &correct_value, const vector<double> &outpu
     }
 }
 
-void Net::propagation(double n, vector<double> &input) {
+void Net::propagation(double n, const vector<double> &input) {
     // Input layer
-    for (int i = 0; i < input_layer.size(); ++i) {
+    for (int i = 0; i < int(input_layer.size()) - 1; ++i) {      // -1 por la bias
         for (int j = 0; j < input_layer[i].length(); ++j) {
             input_layer[i].modify_i(j,
                                   input_layer[i].i_weight_vector(j) +
@@ -145,7 +147,7 @@ void Net::propagation(double n, vector<double> &input) {
 
     // Hidden layer
 
-    for (int i = 0; i < hidden_layer.size(); ++i) {
+    for (int i = 0; i < int(hidden_layer.size()) - 1; ++i) {    // -1 por la bias
         for (int j = 0; j < hidden_layer[i].length(); ++j) {
             hidden_layer[i].modify_i(j,
                         hidden_layer[i].i_weight_vector(j) +
@@ -163,44 +165,31 @@ void Net::propagation(double n, vector<double> &input) {
     }
 }
 
-void Net::interpretate(const vector< vector<double> > &correct_value,
-                       vector<double> &output_outputlayer,
-                       double error_admited, bool &b, int k) {
 
-    int l = 0;
-    b = true;
-    while (b and l < input.size()) {
-        if ((correct_value[k][l] - output_outputlayer[l]) >
-                error_admited) {b = false;}
-        ++l;
+// Devuelve true si todas las salidas están bien, false en caso contrario.
+bool Net::interpretate(const vector<double> &correct_value,
+                       vector<double> &output_outputlayer) {
+
+    for (int i = 0; i < output_outputlayer.size(); ++i) {
+        if (correct_value[i] == 0 and output_outputlayer[i] >= 5) return false;
+        else if (correct_value[i] == 1 and output_outputlayer[i] < 5) return false;
     }
-
+    return true;
 }
 
 
 void Net::train(vector<double> &output_outputlayer,
-                const vector< vector<double> > &correct_value,
-                double n, double error_admited,
-                vector< vector<double> > &input) {
+                const vector<double> &correct_value, double n,
+                const vector<double> &input, bool &b) {
 
-    bool frenar = false;
-    int k = 0;  // I will use it as a index of a samples (training set + correct value)
-    while (not frenar) {
-        calculate_net(output_outputlayer);
+    b = interpretate(correct_value, output_outputlayer);
 
-
-        // Aquí es la parte donde se interpreta
-        interpretate(correct_value, output_outputlayer, error_admited,
-                     frenar, k);
-
-        if (not frenar) {
-            error(correct_value[k], output_outputlayer);
-            propagation(n, input[k]);
-        }
-
-        if (k >= input.size()) k = 0;
-        else ++k;
+    if (not b) {
+        error(correct_value, output_outputlayer);
+        propagation(n, input);
     }
+
+    calculate_network_net(input, output_outputlayer);
 
 }
 

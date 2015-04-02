@@ -29,11 +29,15 @@ void Neuron::modify_delta_value(double x) {
     delta = x;
 }
 
+void Neuron::set_net(double value) {
+    net = value;
+}
+
 void Neuron::length_weight_vector(int x) {
     weight = vector<double>(x);
 }
 
-void Neuron::calculate_net(vector<double> &input) {
+void Neuron::calculate_net(const vector<double> &input) {
     net = 0;
     for (int i = 0; i < input.size(); ++i) {
         net += input[i]*weight[i];

@@ -2,9 +2,9 @@
 #include "Funcion.hh"
 
 double funcion(double x) {
-    return ((tanh(x) + 1)/2);
+    return (1 / (1 + exp(-x)));
 }
 
 double funcion_derivada(double x) {
-    return ((1 - pow(tanh(x), 2))/2);
+    return (-(funcion(x) * (1 - funcion(x))));
 }

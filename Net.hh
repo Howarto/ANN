@@ -3,11 +3,14 @@
 
 #include "Neuron.hh"
 
+struct Trait {
+    vector< vector<double> > inputs;    // Inputs
+    vector< vector<double> > g_val;   // Good values
+};
+
 //  OJO!! QUE NO HE IMPLEMENTADO BIAS!!
 class Net {
 private:
-    vector<double> input;
-    vector<double> output;
     vector<Neuron> input_layer;
     vector<Neuron> hidden_layer;
     vector<Neuron> output_layer;
@@ -19,7 +22,7 @@ public:
 
     // Constructoras
     /** \brief Constructor. */
-    Net(int input_size, int hidden_size, int output_size, vector<double> &input);
+    Net(int input_size, int hidden_size, int output_size, vector<double> &inp);
 
     // Modificadores
 
@@ -27,7 +30,7 @@ public:
      *  \pre All the sizes > 0 and the vector is not empty
      *  \post The vector is full of the output value and the net
      *   of the network is calculate */
-    void calculate_net(vector<double> &output_outputlayer);
+    void calculate_network_net(const vector<double> &input, vector<double> &output_outputlayer);
 
     /** \brief Take a error of the all net's neuron
      *  \pre The vectors are not empty
@@ -37,23 +40,21 @@ public:
     /** \brief It propagates a changes of the weights
      *  \pre n > 0 and the vector is not empty
      *  \post All the weights are been recalculated */
-    void propagation(double n, vector<double> &input);
+    void propagation(double n, const vector<double> &input);
 
-    /** \brief This networks not have exact values, so here you
-     *  put the minimum output for consider it correct.
-     *  \pre True.
-     *  \post Interpretate values will be updated */
-    void interpretate(const vector< vector<double> > &correct_value,
-                      vector<double> &output_outputlayer,
-                      double error_admited, bool &b, int k);
+    // COMENTA!!
+    bool interpretate(const vector<double> &correct_value,
+                      vector<double> &output_outputlayer);
 
-    /** \brief It trains ANN
-     *  \pre True.
-     *  \post Ann will be trained */
+    /** \brief It trains ANN with specific values.
+     *  \pre The vectors are not empty, n and error_admited != 0 and it
+     *  must have a correct net value before use it.
+     *  \post It has do one epoch, ANN's weights have been modificated
+     *  one time and the new net value has been calculated */
     void train(vector<double> &output_outputlayer,
-               const vector< vector<double> > &correct_value,
-               double n, double error_admited,
-               vector< vector<double> > &input);
+               const vector<double> &correct_value,
+               double n,
+               const vector<double> &input, bool &b);
 
 };
 
