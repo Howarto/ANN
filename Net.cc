@@ -5,9 +5,17 @@ Net::Net(int inputSize, int hiddenSize, int outputSize) {
 }
 
 void Net::createNetwork(int inputSize, int hiddenSize, int outputSize) {
-    layers = vector<vector<vector<double> > >(2);
-    createLayer(hiddenSize, inputSize, 0);
-    createLayer(outputSize, hiddenSize, 1);
+    lastDeltas = vector<vector<vector<double> > >();
+
+    if (hiddenSize > 0) {
+        layers = vector<vector<vector<double> > >(2);
+        createLayer(hiddenSize, inputSize, 0);
+        createLayer(outputSize, hiddenSize, 1);
+    }
+    else {
+        layers = vector<vector<vector<double> > >(1);
+        createLayer(outputSize, inputSize, 0);
+    }
 }
 
 void Net::createLayer(int size, int inputSize, int layerIndex) {
@@ -31,7 +39,7 @@ double Net::getRandomWeight(int numberOfWeights) {
 }
 
 void Net::compute(const vector<double> &input, vector<double> &results) {
-    vector<double> parsedInputs = input;
+    vector<double> parsedInputs(input);
     allInputs = vector<vector<double> >(layers.size());
     allResults = vector<vector<double> >(layers.size());
 
@@ -43,9 +51,9 @@ void Net::compute(const vector<double> &input, vector<double> &results) {
             results[neuronIndex] = computeNeuron(parsedInputs, layers[layerIndex][neuronIndex], false);
         }
 
-        allInputs[layerIndex] = parsedInputs;
-        allResults[layerIndex] = results;
-        parsedInputs = results;
+        allInputs[layerIndex] = vector<double>(parsedInputs);
+        allResults[layerIndex] = vector<double>(results);
+        parsedInputs = vector<double>(results);
     }
 }
 
@@ -67,7 +75,7 @@ double Net::activationFunction(double x, bool derivative) {
     return 1 / (1 + exp(-x));
 }
 
-void Net::train(const vector<double> &input, const vector<double> &expectedOutputs, double trainingSpeed) {
+void Net::train(const vector<double> &input, const vector<double> &expectedOutputs, double trainingSpeed, double momentum) {
     // At first, we compute the current results, to know what error we have.
     vector<double> notUsedAgainResults;
     compute(input, notUsedAgainResults);
@@ -93,10 +101,10 @@ void Net::train(const vector<double> &input, const vector<double> &expectedOutpu
 
         for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
             // difference = sum(difference of next neuron j * weight of this neuron on next neuron j)
-            double difference = 0;
+            networkDifferences[layerIndex][neuronIndex] = 0;
 
             for (int nextNeuronIndex = 0; nextNeuronIndex < layers[layerIndex + 1].size(); ++nextNeuronIndex) {
-                difference += networkDifferences[layerIndex + 1][nextNeuronIndex] * layers[layerIndex + 1][nextNeuronIndex][neuronIndex];
+                networkDifferences[layerIndex][neuronIndex] += networkDifferences[layerIndex + 1][nextNeuronIndex] * layers[layerIndex + 1][nextNeuronIndex][neuronIndex];
             }
         }
 
@@ -124,10 +132,15 @@ void Net::train(const vector<double> &input, const vector<double> &expectedOutpu
     for (layerIndex = 0; layerIndex < layers.size(); ++layerIndex) {
         for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
             for (int weightIndex = 0; weightIndex < layers[layerIndex][neuronIndex].size(); ++weightIndex) {
-                // newWeight = oldWeight + delta.
-                // TODO: we can implement momentum here easily just storing the last calculated deltas.
+                // newWeight = oldWeight + delta + lastDelta * momentum.
                 layers[layerIndex][neuronIndex][weightIndex] += networkDeltas[layerIndex][neuronIndex][weightIndex];
+
+                if (lastDeltas.size() > 0) {
+                    layers[layerIndex][neuronIndex][weightIndex] += lastDeltas[layerIndex][neuronIndex][weightIndex] * momentum;
+                }
             }
         }
     }
+
+    lastDeltas = networkDeltas;
 }

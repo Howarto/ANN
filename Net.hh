@@ -15,6 +15,7 @@ private:
     // Vector of layers, every layer is vector of neurons, every neuron has 1 result.
     vector<vector<double> > allResults;
     vector<vector<double> > allInputs;
+    vector<vector<vector<double> > > lastDeltas;
 
     void createNetwork(int inputSize, int hiddenSize, int outputSize);
     void createLayer(int size, int inputSize, int layerIndex);
@@ -26,7 +27,7 @@ public:
     Net(int inputSize, int hiddenSize, int outputSize);
 
     void compute(const vector<double> &input, vector<double> &results);
-    void train(const vector<double> &input, const vector<double> &expectedOutputs, double trainingSpeed);
+    void train(const vector<double> &input, const vector<double> &expectedOutputs, double trainingSpeed, double momentum);
 };
 
 #endif

@@ -2,14 +2,15 @@
 #include "Net.hh"
 #include "math.h"
 #include <string>
-
+#include <random>
 using namespace std;
 
-#define TRAINING_SPEED 0.9
+#define TRAINING_SPEED 0.6
 #define INPUT_SIZE 2
-#define HIDDEN_SIZE 2
+#define HIDDEN_SIZE 3
 #define OUTPUT_SIZE 1
 #define TRAINING_CASES 4
+#define MOMENTUM 0.5
 
 #define DEBUG false
 
@@ -28,6 +29,8 @@ string v2s(const vector<double> &v) {
 }
 
 int main() {
+    srand(time(0));
+
     vector<vector<double> > inputs = vector<vector<double> >(TRAINING_CASES, vector<double>(INPUT_SIZE));
     vector<vector<double> > outputs = vector<vector<double> >(TRAINING_CASES, vector<double>(OUTPUT_SIZE));
 
@@ -49,7 +52,7 @@ int main() {
     outputs[1][0] = 0;
     outputs[2][0] = 0;
     outputs[3][0] = 1;
-    */
+    //*/
 
     // OR
     //*
@@ -72,7 +75,7 @@ int main() {
     //*/
 
     // XOR
-    //*
+    /*
     inputs[0][0] = -1;
     inputs[0][1] = -1;
 
@@ -101,7 +104,7 @@ int main() {
 
         for (int i = 0; i < TRAINING_CASES; ++i) {
             if (DEBUG) cout << "Training " << v2s(inputs[i]) << " => " << v2s(outputs[i]) << endl;
-            net.train(inputs[i], outputs[i], TRAINING_SPEED);
+            net.train(inputs[i], outputs[i], TRAINING_SPEED, MOMENTUM);
         }
 
         finished = true;
