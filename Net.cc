@@ -1,195 +1,133 @@
 #include "Net.hh"
-#include <random>
 
-// Funciones de apoyo
-
-// Sirve para generar un número "aleatorio" (en realidad es lineal...)
-double Net::fRand(double fMin, double fMax) {
-    double f = (double)rand() / RAND_MAX;
-    return fMin + f * (fMax - fMin);
+Net::Net(int inputSize, int hiddenSize, int outputSize) {
+    createNetwork(inputSize, hiddenSize, outputSize);
 }
 
-// Constructoras
-Net::Net(int input_size, int hidden_size, int output_size, vector<double> &inp) {
-    input_layer = vector<Neuron>(input_size + 1);       // Sumo 1 para la bias
-    hidden_layer = vector<Neuron>(hidden_size + 1);     // Sumo 1 para la bias
-    output_layer = vector<Neuron>(output_size);
-
-    // Initialize random weights
-    for (int i = 0; i < input_size; ++i) {
-        input_layer[i].length_weight_vector(inp.size());
-        for (int j = 0; j < inp.size(); ++j) {
-            // TENGO QUE GENERAR AQUÍ UN NÚMERO ALEATORIO!!
-            input_layer[i].modify_i(j, fRand(-0.5,0.5));
-        }
-    }
-
-
-    // ESTO ES PARA EL EXAMPLE!!!
-//    input_layer[0].modify_i(0, 1);
-//    input_layer[0].modify_i(1, 0.15);
-
-//    input_layer[1].modify_i(0, 0.5);
-//    input_layer[1].modify_i(1, 0.75);
-
-//    input_layer[2].modify_i(0, 0.8);
-//    input_layer[2].modify_i(1, 1.2);
-
-    for (int i = 0; i < hidden_layer.size(); ++i) {
-        hidden_layer[i].length_weight_vector(input_layer.size());
-        for (int j = 0; j < input_layer.size(); ++j) {
-            hidden_layer[i].modify_i(j, fRand(-0.6,0.9));
-        }
-    }
-
-    // ESTO ES PARA EL EXAMPLE!!!
-//    hidden_layer[0].modify_i(0, 0.2);
-//    hidden_layer[0].modify_i(1, 0.21);
-//    hidden_layer[0].modify_i(2, 0.62);
-
-//    hidden_layer[1].modify_i(0, 0.17);
-//    hidden_layer[1].modify_i(1, 0.55);
-//    hidden_layer[1].modify_i(2, 0.81);
-
-    for (int i = 0; i < output_layer.size(); ++i) {
-        output_layer[i].length_weight_vector(hidden_layer.size());
-        for (int j = 0; j < hidden_layer.size(); ++j) {
-            output_layer[i].modify_i(j, fRand(-1,0.789));
-        }
-    }
-
-    // ESTO ES PARA EL EXAMPLE!!!
-//    output_layer[0].modify_i(0, 0.09);
-//    output_layer[0].modify_i(1, 0.4);
-
+void Net::createNetwork(int inputSize, int hiddenSize, int outputSize) {
+    layers = vector<vector<vector<double> > >(2);
+    createLayer(hiddenSize, inputSize, 0);
+    createLayer(outputSize, hiddenSize, 1);
 }
 
-// Modificadores
+void Net::createLayer(int size, int inputSize, int layerIndex) {
+    layers[layerIndex] = vector<vector<double> >(size);
+    int numberOfWeights = inputSize + 1;        // +1 because of BIAS
 
+    for (int neuronIndex = 0; neuronIndex < size; ++neuronIndex) {
+        layers[layerIndex][neuronIndex] = vector<double>(numberOfWeights);
 
-void Net::calculate_network_net(const vector<double> &input ,vector<double> &output_outputlayer) {
-    // Operaciones input layer
-    vector<double> output_inputlayer(input_layer.size());
-    for (int i = 0; i < int(input_layer.size()) - 1; ++i) {     // El -1 es por la bias
-        input_layer[i].calculate_net(input);
-        output_inputlayer[i] = input_layer[i].calculate_output();
-    }
-    input_layer[int(input_layer.size()) - 1].set_net(1);
-    output_inputlayer[int(input_layer.size()) - 1] = 1;     // meto el valor de la bias
-    // Cuando llegue hasta aquí en output_inputlayer estarán todas
-    // las salidas del primer layer.
-    /* Ahora lo redirigiré hacia el hidden layer */
-
-    vector<double> output_hiddenlayer(hidden_layer.size());
-    for (int i = 0; i < int(hidden_layer.size()) - 1; ++i) {         // -1 por la bias
-        hidden_layer[i].calculate_net(output_inputlayer);
-        output_hiddenlayer[i] = hidden_layer[i].calculate_output();
-    }
-    hidden_layer[int(hidden_layer.size()) - 1].set_net(1);
-    output_hiddenlayer[int(hidden_layer.size()) - 1] = 1;   // meto el valor por la bias
-
-    // Hice lo mismo que antes pero con la capa hidden. Ahora redigiré
-    // hacia la última capa lo que queda.
-
-    for (int i = 0; i < output_layer.size(); ++i) {
-        output_layer[i].calculate_net(output_hiddenlayer);
-        output_outputlayer[i] = output_layer[i].calculate_output();
-    }
-
-}
-
-void Net::error(const vector<double> &correct_value, const vector<double> &output_outputlayer) {
-    // Para cada salida hay que realizar el cálculo, ya que el error
-    // total viene siendo el sumatorio de los errores. Cada uno se saca
-    // de los outputs y se sacan los errores de cada neurona haciendo
-    // un "barrido" hacia el input, calculando en cadena todas las neuronas
-    // que hay por el camino.
-
-    // Bucle for principal que recorrer los output
-    for (int i = 0; i < output_layer.size(); ++i) {
-        output_layer[i].modify_delta_value(correct_value[i] - output_outputlayer[i]);
-    }
-
-    // Recuerda: Las deltas de las capas anteriores al output siguen la fórmula
-    // delta = sumatorio de (los pesos relaciones con la neurona de la capa que queremos calcular*delta capa siguiente).
-    double aux;
-    // Bucle para el hidden
-    for (int i = 0; i < hidden_layer.size(); ++i) {
-        aux = 0;
-        for (int l = 0; l < output_layer.size(); ++l) {
-            aux += output_layer[l].i_weight_vector(i) * output_layer[l].delta_value();
-        }
-        hidden_layer[i].modify_delta_value(aux);
-    }
-
-    // Bucle para el input
-    for (int i = 0; i < input_layer.size(); ++i) {
-        aux = 0;
-        for (int l = 0; l < int(hidden_layer.size()) - 1; ++l) {     // -1 por la bias
-            aux += hidden_layer[l].i_weight_vector(i) * hidden_layer[l].delta_value();
-
-        }
-        input_layer[i].modify_delta_value(aux);
-    }
-}
-
-void Net::propagation(double n, const vector<double> &input) {
-    // Input layer
-    for (int i = 0; i < int(input_layer.size()) - 1; ++i) {      // -1 por la bias
-        for (int j = 0; j < input_layer[i].length(); ++j) {
-            input_layer[i].modify_i(j,
-                                  input_layer[i].i_weight_vector(j) +
-                                  n*input_layer[i].delta_value()*
-                                  funcion_derivada(input_layer[i].net_value())*input[j]);
-        }
-    }
-
-
-    // Hidden layer
-
-    for (int i = 0; i < int(hidden_layer.size()) - 1; ++i) {    // -1 por la bias
-        for (int j = 0; j < hidden_layer[i].length(); ++j) {
-            hidden_layer[i].modify_i(j,
-                        hidden_layer[i].i_weight_vector(j) +
-                        n*hidden_layer[i].delta_value()*funcion_derivada(hidden_layer[i].net_value())*funcion(input_layer[j].net_value()));
-        }
-    }
-
-    // Output layer
-    for (int i = 0; i < output_layer.size(); ++i) {
-        for (int j = 0; j < output_layer[i].length(); ++j) {
-            output_layer[i].modify_i(j,
-                        output_layer[i].i_weight_vector(j) +
-                        n*output_layer[i].delta_value()*funcion_derivada(output_layer[i].net_value())*funcion(hidden_layer[j].net_value()));
+        for (int weightIndex = 0; weightIndex < numberOfWeights; ++weightIndex) {
+            layers[layerIndex][neuronIndex][weightIndex] = getRandomWeight(numberOfWeights);
         }
     }
 }
 
-
-// Devuelve true si todas las salidas están bien, false en caso contrario.
-bool Net::interpretate(const vector<double> &correct_value,
-                       vector<double> &output_outputlayer) {
-
-    for (int i = 0; i < output_outputlayer.size(); ++i) {
-        if (correct_value[i] == 0 and output_outputlayer[i] >= 5) return false;
-        else if (correct_value[i] == 1 and output_outputlayer[i] < 5) return false;
-    }
-    return true;
+double Net::getRandomWeight(int numberOfWeights) {
+    // Returns a random in the interval [-1/sqrt(numberOfWeights), 1/sqrt(numberOfWeights)]
+    double x = 1 / sqrt(numberOfWeights);
+    double random = (double)rand() / RAND_MAX;
+    return random * 2 * x - x;
 }
 
+void Net::compute(const vector<double> &input, vector<double> &results) {
+    vector<double> parsedInputs = input;
+    allInputs = vector<vector<double> >(layers.size());
+    allResults = vector<vector<double> >(layers.size());
 
-void Net::train(vector<double> &output_outputlayer,
-                const vector<double> &correct_value, double n,
-                const vector<double> &input, bool &b) {
+    for (int layerIndex = 0; layerIndex < layers.size(); ++layerIndex) {
+        parsedInputs.push_back(1);           // We add the BIAS value 1 to the previous input data.
+        results = vector<double>(layers[layerIndex].size());
 
-    b = interpretate(correct_value, output_outputlayer);
+        for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
+            results[neuronIndex] = computeNeuron(parsedInputs, layers[layerIndex][neuronIndex], false);
+        }
 
-    if (not b) {
-        error(correct_value, output_outputlayer);
-        propagation(n, input);
+        allInputs[layerIndex] = parsedInputs;
+        allResults[layerIndex] = results;
+        parsedInputs = results;
     }
-
-    calculate_network_net(input, output_outputlayer);
-
 }
 
+double Net::computeNeuron(const vector<double> &inputs, const vector<double> &weights, bool derivative) {
+    double output = 0;
+
+    for (int i = 0; i < inputs.size(); ++i) {
+        output += inputs[i] * weights[i];
+    }
+
+    return activationFunction(output, derivative);
+}
+
+double Net::activationFunction(double x, bool derivative) {
+    if (derivative) {
+        return activationFunction(x, false) * (1 - activationFunction(x, false));
+    }
+
+    return 1 / (1 + exp(-x));
+}
+
+void Net::train(const vector<double> &input, const vector<double> &expectedOutputs, double trainingSpeed) {
+    // At first, we compute the current results, to know what error we have.
+    vector<double> notUsedAgainResults;
+    compute(input, notUsedAgainResults);
+
+    // Calculating errors (difference between expected results and current results).
+    vector<vector<double> > networkDifferences(layers.size());
+
+    // Output layer differences.
+    int layerIndex = layers.size() - 1;
+    networkDifferences[layerIndex] = vector<double>(layers[layerIndex].size());
+
+    for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
+        // difference = expected - real
+        networkDifferences[layerIndex][neuronIndex] = expectedOutputs[neuronIndex] - allResults[layerIndex][neuronIndex];
+    }
+
+    --layerIndex;
+
+    // Hidden layer differences.
+
+    while (layerIndex >= 0) {
+        networkDifferences[layerIndex] = vector<double>(layers[layerIndex].size());
+
+        for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
+            // difference = sum(difference of next neuron j * weight of this neuron on next neuron j)
+            double difference = 0;
+
+            for (int nextNeuronIndex = 0; nextNeuronIndex < layers[layerIndex + 1].size(); ++nextNeuronIndex) {
+                difference += networkDifferences[layerIndex + 1][nextNeuronIndex] * layers[layerIndex + 1][nextNeuronIndex][neuronIndex];
+            }
+        }
+
+        --layerIndex;
+    }
+
+    // Calculating deltas.
+    vector<vector<vector<double> > > networkDeltas(layers.size());
+
+    for (layerIndex = 0; layerIndex < layers.size(); ++layerIndex) {
+        networkDeltas[layerIndex] = vector<vector<double> >(layers[layerIndex].size());
+
+        for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
+            networkDeltas[layerIndex][neuronIndex] = vector<double>(layers[layerIndex][neuronIndex].size());
+
+            for (int weightIndex = 0; weightIndex < layers[layerIndex][neuronIndex].size(); ++weightIndex) {
+                // delta = trainingSpeed * difference assigned to this neuron * f'(sum(original inputs * original weights)) * inputs[weightIndex] of this neuron
+                networkDeltas[layerIndex][neuronIndex][weightIndex] = trainingSpeed * networkDifferences[layerIndex][neuronIndex] * computeNeuron(allInputs[layerIndex], layers[layerIndex][neuronIndex], true) * allInputs[layerIndex][weightIndex];
+            }
+        }
+    }
+
+    // Calculating new weights.
+
+    for (layerIndex = 0; layerIndex < layers.size(); ++layerIndex) {
+        for (int neuronIndex = 0; neuronIndex < layers[layerIndex].size(); ++neuronIndex) {
+            for (int weightIndex = 0; weightIndex < layers[layerIndex][neuronIndex].size(); ++weightIndex) {
+                // newWeight = oldWeight + delta.
+                // TODO: we can implement momentum here easily just storing the last calculated deltas.
+                layers[layerIndex][neuronIndex][weightIndex] += networkDeltas[layerIndex][neuronIndex][weightIndex];
+            }
+        }
+    }
+}

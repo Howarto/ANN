@@ -6,5 +6,5 @@ double funcion(double x) {
 }
 
 double funcion_derivada(double x) {
-    return (-(funcion(x) * (1 - funcion(x))));
+    return (funcion(x)*(1 - funcion(x)));
 }

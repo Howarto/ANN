@@ -1,72 +1,129 @@
 #include <iostream>
-#include "Neuron.hh"
 #include "Net.hh"
+#include "math.h"
+#include <string>
 
 using namespace std;
 
-int main() {
-    // INPUT EXAMPLE
-//    vector<double> input(2);
-//    input[0] = 0.6;
-//    input[1] = 0.35;
+#define TRAINING_SPEED 0.9
+#define INPUT_SIZE 2
+#define HIDDEN_SIZE 2
+#define OUTPUT_SIZE 1
+#define TRAINING_CASES 4
 
-    Trait sample;
+#define DEBUG false
 
-    // Creo los diferentes samples
-    sample.inputs = vector< vector<double> >(4, vector<double>(2));
+string v2s(const vector<double> &v) {
+    string s = "";
 
-    sample.inputs[0][0] = 0;
-    sample.inputs[0][1] = 0;
+    for (int i = 0; i < v.size(); ++i) {
+        s = s + std::to_string(v[i]);
 
-    sample.inputs[1][0] = 0;
-    sample.inputs[1][1] = 1;
-
-    sample.inputs[2][0] = 1;
-    sample.inputs[2][1] = 0;
-
-    sample.inputs[3][0] = 1;
-    sample.inputs[3][1] = 1;
-
-    // Creo las correspondientes salidas válidas. Las creo en formato columna, es decir,
-    // en cada fila estarán los outputs de cada vector de input.
-    sample.g_val = vector< vector<double> >(4, vector<double>(1));
-    sample.g_val[0][0] = 0;
-    sample.g_val[1][0] = 0;
-    sample.g_val[2][0] = 0;
-    sample.g_val[3][0] = 1;
-
-
-    Net net(2, 1, 1, sample.inputs[0]);
-    vector <double> output_net(1);
-    net.calculate_network_net(sample.inputs[0] ,output_net);
-    int l = 0;
-    bool seguir = true;
-    bool b; // Indica false si ha tenido que entrar en el cálculo del error dentro de train()
-    int cuenta = 0;
-    int h = 0;
-    while (h < 1000) {
-        net.train(output_net, sample.g_val[l], 0.1, sample.inputs[l], b);
-        if (not b) ++cuenta;
-        if (cuenta == sample.inputs[0].size()) seguir = false;
-        ++l;
-        if (l >= 4) {
-            l = 0;
-            cuenta = 0;
+        if (i < v.size() - 1) {
+            s += ", ";
         }
-        ++h;
     }
 
-    net.calculate_network_net(sample.inputs[0], output_net);
-    cout << "Debería dar 0 " << output_net[0] << endl;
+    return s;
+}
 
-    net.calculate_network_net(sample.inputs[1], output_net);
-    cout << "Debería dar 0 " << output_net[0] << endl;
+int main() {
+    vector<vector<double> > inputs = vector<vector<double> >(TRAINING_CASES, vector<double>(INPUT_SIZE));
+    vector<vector<double> > outputs = vector<vector<double> >(TRAINING_CASES, vector<double>(OUTPUT_SIZE));
 
-    net.calculate_network_net(sample.inputs[2], output_net);
-    cout << "Debería dar 0 " << output_net[0] << endl;
+    // AND
+    /*
+    inputs[0][0] = -1;
+    inputs[0][1] = -1;
 
-    net.calculate_network_net(sample.inputs[3], output_net);
-    cout << "Debería dar 1 " << output_net[0] << endl;
+    inputs[1][0] = -1;
+    inputs[1][1] = 1;
 
+    inputs[2][0] = 1;
+    inputs[2][1] = -1;
+
+    inputs[3][0] = 1;
+    inputs[3][1] = 1;
+
+    outputs[0][0] = 0;
+    outputs[1][0] = 0;
+    outputs[2][0] = 0;
+    outputs[3][0] = 1;
+    */
+
+    // OR
+    //*
+    inputs[0][0] = -1;
+    inputs[0][1] = -1;
+
+    inputs[1][0] = -1;
+    inputs[1][1] = 1;
+
+    inputs[2][0] = 1;
+    inputs[2][1] = -1;
+
+    inputs[3][0] = 1;
+    inputs[3][1] = 1;
+
+    outputs[0][0] = 0;
+    outputs[1][0] = 1;
+    outputs[2][0] = 1;
+    outputs[3][0] = 1;
+    //*/
+
+    // XOR
+    //*
+    inputs[0][0] = -1;
+    inputs[0][1] = -1;
+
+    inputs[1][0] = -1;
+    inputs[1][1] = 1;
+
+    inputs[2][0] = 1;
+    inputs[2][1] = -1;
+
+    inputs[3][0] = 1;
+    inputs[3][1] = 1;
+
+    outputs[0][0] = 0;
+    outputs[1][0] = 1;
+    outputs[2][0] = 1;
+    outputs[3][0] = 0;
+    //*/
+
+    Net net(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE);
+    bool finished = false;
+    vector<double> results;
+    int iteration = 1;
+
+    while (!finished) {
+        cout << "Iteration " << iteration << endl;
+
+        for (int i = 0; i < TRAINING_CASES; ++i) {
+            if (DEBUG) cout << "Training " << v2s(inputs[i]) << " => " << v2s(outputs[i]) << endl;
+            net.train(inputs[i], outputs[i], TRAINING_SPEED);
+        }
+
+        finished = true;
+
+        for (int i = 0; i < TRAINING_CASES && finished; ++i) {
+            net.compute(inputs[i], results);
+            if (DEBUG) cout << "Checking " << v2s(inputs[i]) << " -> " << v2s(results) << endl;
+            finished = (round(results[0]) == outputs[i][0]);
+            if (DEBUG) cout << v2s(results) << " == " << v2s(outputs[i]) << " ? " << finished << endl;
+        }
+
+        if (DEBUG) {
+            cout << "Press enter to continue.";
+            cin.ignore();
+        }
+
+        ++iteration;
+    }
+
+    for (int i = 0; i < TRAINING_CASES; ++i) {
+        net.compute(inputs[i], results);
+        cout << "Debería dar " << outputs[i][0] << " y da " << round(results[0]) << endl;
+    }
 }
 
